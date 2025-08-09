@@ -2,6 +2,27 @@
 #include <string>
 #include <iostream>
 #include "assetpaths.h"
+#include <vector>
+
+// structs
+
+struct Player
+{
+    float moveSpeed = 500.0f;
+    sf::CircleShape sprite = sf::CircleShape(50.f);
+};
+
+struct Bullet
+{
+    float moveSpeed = 1000.0f;
+    sf::CircleShape sprite = sf::CircleShape(5.f);
+};
+
+/*
+    functions
+*/
+
+// utility
 
 std::string getAssetPath(const std::string& relativePath)
 {
@@ -10,6 +31,8 @@ std::string getAssetPath(const std::string& relativePath)
 }
 
 // circle shape is TEMP, will be moved to player class later.
+//player
+
 bool keepPlayerInsideOfBounds(sf::CircleShape& player, const sf::Vector2u& windowSize)
 {
     sf::Vector2f position = player.getPosition();
@@ -34,11 +57,30 @@ bool keepPlayerInsideOfBounds(sf::CircleShape& player, const sf::Vector2u& windo
     return true;
 }
 
-struct Player 
+// combat
+
+bool fireDefaultBullet(std::vector<Bullet>& bullets, Player& player)
 {
-    const float moveSpeed = 500.0f;
-	sf::CircleShape sprite = sf::CircleShape(50.f);
-};
+    // if(cooldown) return
+    Bullet bullet;
+
+    bullet.sprite.setFillColor(sf::Color::Red);
+    bullet.sprite.setPosition(
+        sf::Vector2f(player.sprite.getPosition().x + player.sprite.getRadius() - bullet.sprite.getRadius(), player.sprite.getPosition().y)
+    );
+    bullets.push_back(bullet);
+    
+    return true;
+}
+
+bool cleanupBullets(std::vector<Bullet>& bullets)   {
+    bullets.erase(
+        std::remove_if(bullets.begin(), bullets.end(),
+            [&](const Bullet& b) { return b.sprite.getPosition().y < 0; }),
+        bullets.end()
+    );
+    return true;
+}
 
 int main()
 {   
@@ -54,6 +96,9 @@ int main()
 
     // player
     Player player;
+
+    // bullets
+    std::vector<Bullet> bullets;
 
     /*
         Utility / misc
@@ -84,11 +129,12 @@ int main()
                     window.close();
             }
         } 
+        // delta timer
+        float deltaTime = deltaClock.restart().asSeconds();
 
         // TODO: extrapolate later 
         // input handling
 
-		float deltaTime = deltaClock.getElapsedTime().asSeconds();
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W))
             player.sprite.move(sf::Vector2f(0.0f, (-player.moveSpeed * deltaTime)));
 
@@ -101,6 +147,14 @@ int main()
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S))
             player.sprite.move(sf::Vector2f(0.0f, player.moveSpeed * deltaTime));
 
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+            if (fireDefaultBullet(bullets, player))
+				window.draw(Bullet().sprite); // only draw bullet if it was fired.
+            else {}
+				// gun jam
+        }
+
+        cleanupBullets(bullets);
 		keepPlayerInsideOfBounds(player.sprite, window.getSize());
 
         sf::Text text(defaultFont, "TopDownShooter", 25);
@@ -111,9 +165,11 @@ int main()
         window.draw(text);
 
         window.draw(player.sprite);
-        
-        //finalise
-        deltaClock.restart(); // restart delta clock each frame.
+
+        // draw all bullets
+        for (auto& bullet : bullets)
+            window.draw(bullet.sprite);
+       
         window.display();
     }
 }
