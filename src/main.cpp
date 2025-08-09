@@ -13,7 +13,6 @@ std::string getAssetPath(const std::string& relativePath)
 bool keepPlayerInsideOfBounds(sf::CircleShape& player, const sf::Vector2u& windowSize)
 {
     sf::Vector2f position = player.getPosition();
-    std::cout << "Player position: " << position.x << ", " << position.y << std::endl;
 
     // clamp x
     if (position.x < 0.f) {
@@ -35,6 +34,12 @@ bool keepPlayerInsideOfBounds(sf::CircleShape& player, const sf::Vector2u& windo
     return true;
 }
 
+struct Player 
+{
+    const float moveSpeed = 500.0f;
+	sf::CircleShape sprite = sf::CircleShape(50.f);
+};
+
 int main()
 {   
     // assets
@@ -47,8 +52,8 @@ int main()
         game objects
     */
 
-    //player
-    sf::CircleShape playerSprite(50.f);
+    // player
+    Player player;
 
     /*
         Utility / misc
@@ -70,8 +75,6 @@ int main()
 
         while (const std::optional event = window.pollEvent())
         {
-            
-
             // close window.
             if (event->is<sf::Event::Closed>()) {
                 window.close();
@@ -80,39 +83,25 @@ int main()
                 if (keyPressed->scancode == sf::Keyboard::Scancode::Escape)
                     window.close();
             }
-
-            // input handling
-            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
-            {
-                /*if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W))
-                    playerSprite.move(sf::Vector2f(0.0f, -5.0f));
-
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A))
-                    playerSprite.move(sf::Vector2f(-5.0f, 0.0f));
-
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D))
-                    playerSprite.move(sf::Vector2f(5.0f, 0.0f));
-
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S))
-                    playerSprite.move(sf::Vector2f(0.0f, 5.0f));*/
-            }
         } 
 
         // TODO: extrapolate later 
         // input handling
+
+		float deltaTime = deltaClock.getElapsedTime().asSeconds();
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W))
-            playerSprite.move(sf::Vector2f(0.0f, -5.0f));
+            player.sprite.move(sf::Vector2f(0.0f, (-player.moveSpeed * deltaTime)));
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A))
-            playerSprite.move(sf::Vector2f(-5.0f, 0.0f));
+            player.sprite.move(sf::Vector2f(-player.moveSpeed * deltaTime, 0.0f));
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D))
-            playerSprite.move(sf::Vector2f(5.0f, 0.0f));
+            player.sprite.move(sf::Vector2f(player.moveSpeed * deltaTime, 0.0f));
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S))
-            playerSprite.move(sf::Vector2f(0.0f, 5.0f));
+            player.sprite.move(sf::Vector2f(0.0f, player.moveSpeed * deltaTime));
 
-		keepPlayerInsideOfBounds(playerSprite, window.getSize());
+		keepPlayerInsideOfBounds(player.sprite, window.getSize());
 
         sf::Text text(defaultFont, "TopDownShooter", 25);
 
@@ -121,9 +110,10 @@ int main()
         //draw here
         window.draw(text);
 
-        window.draw(playerSprite);
+        window.draw(player.sprite);
         
         //finalise
+        deltaClock.restart(); // restart delta clock each frame.
         window.display();
     }
 }
