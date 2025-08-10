@@ -2,8 +2,9 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
-#include "Player.h"
-#include "Bullet.h"
+#include "player.h"
+#include "bullet.h"
+#include "enemy.h"
 
 class Game {
 public:
@@ -17,5 +18,7 @@ private:
 
     sf::RenderWindow window;
     Player player;
-    std::vector<Bullet> bullets;
+    std::vector<std::unique_ptr<Enemy>> enemies;
+    std::vector<std::unique_ptr<Bullet>> bullets;
+    sf::Clock enemySpawnClock;
 };

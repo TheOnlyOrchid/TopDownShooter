@@ -2,6 +2,9 @@
 #include "Config.h"
 #include "AssetManager.h"
 #include "Utils.h"
+#include "player.h"
+#include "bullet.h"
+#include "enemy.h"
 #include <string>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
@@ -10,7 +13,7 @@
 Game::Game() : window(sf::VideoMode({ Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT }), "TopDownShooter") {
     window.setFramerateLimit(Config::FRAME_RATE_LIMIT);
 
-    // Initialize assets here
+    // initialize assets here
     AssetManager::getInstance().loadFont("arial", "assets/fonts/arial.ttf");
 }
 
@@ -42,36 +45,63 @@ void Game::processEvents() {
 void Game::update(float deltaTime) {
     player.update(deltaTime);
 
+    // update bullets
     for (auto& bullet : bullets) {
-        bullet.update(deltaTime);
+        bullet->update(deltaTime);
     }
 
-    // erare bullets outside of the map
+    // remove out-of-bounds bullets
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
-        [this](const Bullet& b) { return b.isOutOfBounds(window.getSize()); }),
+        [this](const std::unique_ptr<Bullet>& b) {
+            return b->isOutOfBounds(window.getSize());
+        }),
         bullets.end());
 
-    // fire
+    // spawn enemies periodically
+    if (enemySpawnClock.getElapsedTime().asSeconds() > Config::ENEMY_SPAWN_INTERVAL) {
+        int x = rand() % Config::WINDOW_WIDTH;
+        enemies.push_back(std::make_unique<DefaultEnemy>(x, -50));
+        enemySpawnClock.restart();
+    }
+
+    // update enemies
+    for (auto& enemy : enemies) {
+        enemy->update(deltaTime, player.getPosition());
+    }
+
+    // remove dead enemies
+    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+        [](const std::unique_ptr<Enemy>& e) {
+            return !e->isAlive();
+        }),
+        enemies.end());
+
+    // fire bullets
     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
         sf::Vector2f spawnPosition = player.getPosition();
         spawnPosition.x += Config::PLAYER_RADIUS - Config::BULLET_RADIUS;
-        bullets.emplace_back(spawnPosition);
+        bullets.push_back(std::make_unique<DefaultBullet>(spawnPosition));
     }
 
-    // keep player in bounds
     Utils::keepShapeInsideBounds(player.getSprite(), window.getSize());
 }
 
 void Game::render() {
     window.clear();
 
-    // draw game objects (current order, player, bullets,)
-    player.draw(window);
-    for (const auto& bullet : bullets) {
-        bullet.draw(window);
+    // enemies
+    for (const auto& enemy : enemies) {
+        enemy->draw(window);
     }
 
-    // draw UI (current order, text,)
+    player.draw(window);
+
+    // bullets
+    for (const auto& bullet : bullets) {
+        bullet->draw(window);
+    }
+
+    // UI
     sf::Text text(AssetManager::getInstance().getFont("arial"), "TopDownShooter", Config::DEFAULT_FONT_SIZE);
     window.draw(text);
 
