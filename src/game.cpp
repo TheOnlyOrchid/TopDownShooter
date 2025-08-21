@@ -8,6 +8,7 @@
 #include <string>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Mouse.hpp>
+#include <SFML/Window/Keyboard.hpp>
 #include <SFML/Graphics/Text.hpp>
 
 Game::Game() : window(sf::VideoMode({ Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT }), "TopDownShooter") {
@@ -47,13 +48,13 @@ void Game::update(float deltaTime) {
 
     // update bullets
     for (auto& bullet : bullets) {
-        bullet->update(deltaTime);
+        bullet->update(deltaTime, player.getPosition(), enemies);
     }
 
-    // remove out-of-bounds bullets
+    // remove out-of-bounds bullets and bullets with 0 pierce
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
         [this](const std::unique_ptr<Bullet>& b) {
-            return b->isOutOfBounds(window.getSize());
+            return b->isOutOfBounds(window.getSize()) || b->shouldBeDestroyed();
         }),
         bullets.end());
 
@@ -76,11 +77,19 @@ void Game::update(float deltaTime) {
         }),
         enemies.end());
 
-    // fire bullets
+    // fire bullets - different types based on input
     if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
         sf::Vector2f spawnPosition = player.getPosition();
         spawnPosition.x += Config::PLAYER_RADIUS - Config::BULLET_RADIUS;
-        bullets.push_back(std::make_unique<DefaultBullet>(spawnPosition));
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift)) {
+            // Hold shift for linear bullets
+            bullets.push_back(std::make_unique<LinearBullet>(spawnPosition, window));
+        }
+        else {
+            // Default homing bullets
+            bullets.push_back(std::make_unique<DefaultBullet>(spawnPosition, window));
+        }
     }
 
     Utils::keepShapeInsideBounds(player.getSprite(), window.getSize());

@@ -34,6 +34,7 @@ void Player::setPosition(const sf::Vector2f& position) {
     sprite.setPosition(position);
 }
 
+// returns top left of sprite :(
 sf::Vector2f Player::getPosition() const {
     return sprite.getPosition();
 }

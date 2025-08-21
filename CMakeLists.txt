@@ -12,7 +12,17 @@ FetchContent_Declare(SFML
     SYSTEM)
 FetchContent_MakeAvailable(SFML)
 
-add_executable(main src/main.cpp "src/include/config.h" "src/include/utils.h" "src/utils.cpp" "src/include/assetmanager.h" "src/assetmanager.cpp" "src/include/player.h" "src/player.cpp" "src/include/bullet.h" "src/bullet.cpp" "src/include/game.h" "src/game.cpp" "src/enemy.cpp" "src/include/enemy.h")
+set(SOURCES
+    src/main.cpp
+    src/utils.cpp
+    src/assetmanager.cpp
+    src/player.cpp
+    "src/Bullets/bullet.cpp"
+    src/game.cpp
+    src/enemy.cpp
+ "src/Bullets/bulletcomponent.cpp")
+
+add_executable(main ${SOURCES} "src/Bullets/bulletutils.cpp")
 include_directories(src/include)
 target_compile_features(main PRIVATE cxx_std_17)
 target_link_libraries(main PRIVATE SFML::Graphics)
